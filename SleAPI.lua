@@ -3,7 +3,7 @@
 -- \___ \| |/ _ \ / _ \ | |_) | | 
 --  ___) | |  __// ___ \|  __/| | 
 -- |____/|_|\___/_/   \_\_|  |___|                                  
--- Version: 1.2
+-- Version: 1.2.1
 -- Made by vloph <3
 
 local SleAPI = {}
@@ -359,8 +359,8 @@ function SleAPI.eyeTracking(eyePart, right, left, up, down, headPart, rotH, rotV
 
                 if dist <= 16 and dz > 0 and dist < closestDist then
                     closestDist = dist
-                    targetX = diff:dot(rightV) * 16
-                    targetY = diff:dot(upV) * 16
+                    targetX = diff:dot(rightV)
+                    targetY = diff:dot(upV)
                     found = true
                 end
             end

@@ -161,6 +161,7 @@ Left_Eye = SleAPI.eyeTracking(
 * Добавлен `dryingAction`
 * Добавлен `eyeTracking`
 * Внутренний рефакторинг
+* 1.2.1: Исправление багов
 
 ### **1.1**
 
