@@ -1,35 +1,37 @@
-# SleAPI Documentation
+# SleAPI
 
-SleAPI is a simple Lua library designed for the Figura mod, allowing you to delay the execution of a function (callback) by a specified amount of time, either in seconds or in ticks. This library is useful for implementing timed events or delays in your Figura avatars.
+> Library for the **Figura** mod that provides timing helpers, animation automation, and player interaction functions
+
+🔗 **Russian documentation:** [README_RU.md](./README_RU.md)
 
 ---
 
-## Installation
+## 📦 Installation
 
-1. Download the `SleAPI.lua` file.
-2. Place it in your Figura avatar directory.
-3. Require the library in your script:
+1. Download `SleAPI.lua`
+2. Place it inside your Figura avatar folder
+3. Require it in your script:
 
 ```lua
 local SleAPI = require("SleAPI")
-```
+````
 
 ---
 
-## Functions
+## 📚 Documentation
 
 ### `SleAPI.sleep(time, callback)`
 
-Delays the execution of a callback by a specified amount of time in seconds.
+Executes a function after a delay in **seconds**.
 
-#### Parameters:
-- **`time`** (`integer`): The delay time in seconds.
-- **`callback`** (`function`): The function to execute after the delay.
+**Parameters**
 
-#### Example:
+* `time` (`number`) — Delay in seconds
+* `callback` (`function`) — Function executed after delay
+
 ```lua
-SleAPI.sleep(5, function()
-    print("5 seconds have passed!")
+SleAPI.sleep(3, function()
+    print("3 seconds passed")
 end)
 ```
 
@@ -37,147 +39,217 @@ end)
 
 ### `SleAPI.tickSleep(time, callback)`
 
-Delays the execution of a callback by a specified amount of time in ticks.
+Executes a function after a delay in **ticks**.
 
-#### Parameters:
-- **`time`** (`integer`): The delay time in ticks.
-- **`callback`** (`function`): The function to execute after the delay.
+**Parameters**
 
-#### Example:
-```lua
-SleAPI.tickSleep(60, function()
-    print("60 ticks have passed!")
-end)
-```
-
----
-
-## Example Usage
+* `time` (`number`) — Delay in ticks
+* `callback` (`function`) — Function executed after delay
 
 ```lua
-local SleAPI = require("SleAPI")
-
--- Delay by 3 seconds
-SleAPI.sleep(3, function()
-    print("3 seconds have passed!")
-end)
-
--- Delay by 40 ticks
 SleAPI.tickSleep(40, function()
-    print("40 ticks have passed!")
+    print("40 ticks passed")
 end)
 ```
 
 ---
 
-## Version History
+### `SleAPI.randAnim(animation, delay, offset?, doubleChance?)`
 
-- **1.0**: Initial release.
-- **1.1**: Current version
-  - Added `tickSleep` function for tick-based delays.
-  - Library renamed to **SleAPI**.
+Automatically plays an animation at random intervals.
 
----
+**Parameters**
 
-## Author
+* `animation` (`Animation`) — Figura animation
+* `delay` (`number`) — Base delay in ticks
+* `offset` (`number`, optional) — Random ± offset
+* `doubleChance` (`number`, optional) — Chance (0–1) to play animation twice
 
-- **vloph**
-  - Discord: `@vloph`
-  - Telegram: `@vl0ph`
+**Returns**
 
----
-
-Enjoy using SleAPI for your Figura avatars! <3
-
----
-
-# Документация SleAPI
-
-SleAPI — это простая библиотека на Lua для мода Figura, позволяющая откладывать выполнение функции на указанное время в секундах или тиках. Библиотека полезна для реализации временных событий или задержек в ваших аватарах для Figura mod.
-
----
-
-## Установка
-
-1. Скачайте файл `SleAPI.lua`.
-2. Поместите его в директорию с вашим аватаром Figura.
-3. Подключите библиотеку в вашем скрипте:
+* `SleRandomAnim` object
 
 ```lua
-local SleAPI = require("SleAPI")
+local blink = SleAPI.randAnim(
+    animations.model.idle,
+    220,
+    40,
+    0.1
+)
 ```
 
----
+#### Methods--  ____  _         _    ____ ___ 
+-- / ___|| | ___   / \  |  _ \_ _|
+-- \___ \| |/ _ \ / _ \ | |_) | | 
+--  ___) | |  __// ___ \|  __/| | 
+-- |____/|_|\___/_/   \_\_|  |___|                                  
+-- Version: 1.1
+-- Made by vloph <3
+-- Discord: @vloph
+-- Telegram: @vl0ph
 
-## Функции
+local SleAPI = {}
 
-### `SleAPI.sleep(time, callback)`
+local sleepOperations = {}
 
-Откладывает выполнение функции на указанное время в секундах.
+-- Function to delay execution of a callback by a specified amount of time (in seconds)
+---@param time integer The delay time in seconds
+---@param callback function The function to execute after the delay
+function SleAPI.sleep(time, callback)
+    x = time * 20
+    local targetTick = world.getTime() + x
+    local operation = { targetTick = targetTick, callback = callback }
 
-#### Параметры:
-- **`time`** (`integer`): Время задержки в секундах.
-- **`callback`** (`function`): Функция, которая будет выполнена после задержки.
+    table.insert(sleepOperations, operation)
 
-#### Пример:
+    if not sleepOperations.tickHandler then
+        sleepOperations.tickHandler = events.TICK:register(function()
+            for i = #sleepOperations, 1, -1 do
+                local op = sleepOperations[i]
+                if world.getTime() >= op.targetTick then
+                    op.callback()
+                    table.remove(sleepOperations, i)
+                end
+            end
+        end)
+    end
+end
+
+-- Function to delay execution of a callback by a specified amount of time (in ticks)
+---@param time integer The delay time in ticks
+---@param callback function The function to execute after the delay
+function SleAPI.tickSleep(time, callback)
+    local targetTick = world.getTime() + time
+    local operation = { targetTick = targetTick, callback = callback }
+
+    table.insert(sleepOperations, operation)
+
+    if not sleepOperations.tickHandler then
+        sleepOperations.tickHandler = events.TICK:register(function()
+            for i = #sleepOperations, 1, -1 do
+                local op = sleepOperations[i]
+                if world.getTime() >= op.targetTick then
+                    op.callback()
+                    table.remove(sleepOperations, i)
+                end
+            end
+        end)
+    end
+end
+
+return SleAPI
+
 ```lua
-SleAPI.sleep(5, function()
-    print("Прошло 5 секунд!")
-end)
+blink:play()
+blink:stop()
+blink:isPlaying()
 ```
 
 ---
 
-### `SleAPI.tickSleep(time, callback)`
+### `SleAPI.blinkAnim(animation, delay, offset?, doubleChance?)`
 
-Откладывает выполнение функции на указанное время в тиках.
-
-#### Параметры:
-- **`time`** (`integer`): Время задержки в тиках.
-- **`callback`** (`function`): Функция, которая будет выполнена после задержки.
-
-#### Пример:
-```lua
-SleAPI.tickSleep(60, function()
-    print("Прошло 60 тиков!")
-end)
-```
-
----
-
-## Пример использования
+Same as `randAnim`, but **automatically disables itself while the player is sleeping**.
 
 ```lua
-local SleAPI = require("SleAPI")
+local blink = SleAPI.blinkAnim(
+    animations.model.blinking, 
+    100, 
+    30, 
+    0.3
+)
+```
 
--- Задержка на 3 секунды
-SleAPI.sleep(3, function()
-    print("Прошло 3 секунды!")
-end)
+Supports the same methods as `SleRandomAnim`.
 
--- Задержка на 40 тиков
-SleAPI.tickSleep(40, function()
-    print("Прошло 40 тиков!")
-end)
+---
+
+### `SleAPI.dryingAction(callback, delay)`
+
+Triggers a callback after the player stops being wet for a certain amount of time.
+
+**Parameters**
+
+* `callback` (`function`) — Called after drying finishes
+* `delay` (`number`) — Drying duration in ticks
+
+
+```lua
+SleAPI.dryingAction(function()
+    animations.model.drying:play()
+end, 60)
 ```
 
 ---
 
-## История версий
+### `SleAPI.eyeTracking(...)`
 
-- **1.0**: Первый релиз.
-- **1.1**:  Текущая версия
-  - Добавлена функция `tickSleep` для задержек в тиках.
-  - Библиотека переименована в **SleAPI** (ранее имела название **VlophAPI**).
+Makes eyes (and optionally head) track the nearest player in front of you.
+
+**Parameters**
+
+* `eyePart` (`ModelPart`) — Eye model part
+* `right` (`number`) — Max right movement
+* `left` (`number`) — Max left movement
+* `up` (`number`) — Max up movement
+* `down` (`number`) — Max down movement
+* `headPart` (`ModelPart`, optional) — Head model part
+* `rotH` (`number`, optional) — Max horizontal head rotation
+* `rotV` (`number`, optional) — Max vertical head rotation
+
+```lua
+Left_Eye = SleAPI.eyeTracking(
+    models.model.root.Head.Eyes.pupilLeft,
+    0,
+    0.7,
+    0,
+    0,
+    models.model.root.Head,
+    30,
+    40
+)
+```
 
 ---
 
-## Автор
+## 🗂 Version History
 
-- **vloph**
-  - Discord: `@vloph`
-  - Telegram: `@vl0ph`
+### **1.2** (Current)
+
+* Added `randAnim`
+* Added `blinkAnim`
+* Added `dryingAction`
+* Added `eyeTracking`
+* Internal refactoring
+
+### **1.1**
+
+* Added `tickSleep`
+* Renamed to **SleAPI**
+
+### **1.0**
+
+* Initial release
 
 ---
 
-Наслаждайтесь использованием SleAPI в ваших аватарах для мода Figura! <3
+## 👤 Author
+
+**vloph**
+
+* Discord: `@vloph`
+* Telegram: `@dotbyby`
+
+---
+
+## ❤️ License
+
+This project is licensed under the **MIT License**.  
+See the [LICENSE](./LICENSE) file for details.
+
+Free to use in personal and public Figura avatars.  
+Credit is appreciated but not required.
+
+---
+
+Enjoy using **SleAPI** for your Figura avatars! ✨
