@@ -162,7 +162,7 @@ Left_Eye = SleAPI.eyeTracking(
 * Added `dryingAction`
 * Added `eyeTracking`
 * Internal refactoring
-* 1.2.1: Bug fixes
+* 1.2.2: Bug fixes
 
 ### **1.1**
 
