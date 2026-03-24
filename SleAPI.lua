@@ -3,7 +3,7 @@
 -- \___ \| |/ _ \ / _ \ | |_) | | 
 --  ___) | |  __// ___ \|  __/| | 
 -- |____/|_|\___/_/   \_\_|  |___|                                  
--- Version: 1.2.1
+-- Version: 1.2.2
 -- Made by vloph <3
 
 local SleAPI = {}
@@ -11,6 +11,8 @@ local SleAPI = {}
 ---------------------------------------------------------------------
 -- UTILITIES
 ---------------------------------------------------------------------
+
+local doubleHandlerCount = 0
 
 local function randomDelay(base, offset)
     if not offset or offset == 0 then return base end
@@ -36,7 +38,8 @@ function SleAPI.sleep(time, callback)
     table.insert(sleepOperations, operation)
 
     if not sleepOperations.tickHandler then
-        sleepOperations.tickHandler = events.TICK:register(function()
+        sleepOperations.tickHandler = true
+        events.TICK:register(function()
             for i = #sleepOperations, 1, -1 do
                 local op = sleepOperations[i]
                 if world.getTime() >= op.targetTick then
@@ -44,7 +47,12 @@ function SleAPI.sleep(time, callback)
                     table.remove(sleepOperations, i)
                 end
             end
-        end)
+
+            if #sleepOperations == 0 then
+                events.TICK:remove("SleSleepHandler")
+                sleepOperations.tickHandler = nil
+            end
+        end, "SleSleepHandler")
     end
 end
 
@@ -64,7 +72,8 @@ function SleAPI.tickSleep(time, callback)
     table.insert(sleepOperations, operation)
 
     if not sleepOperations.tickHandler then
-        sleepOperations.tickHandler = events.TICK:register(function()
+        sleepOperations.tickHandler = true
+        events.TICK:register(function()
             for i = #sleepOperations, 1, -1 do
                 local op = sleepOperations[i]
                 if world.getTime() >= op.targetTick then
@@ -72,7 +81,12 @@ function SleAPI.tickSleep(time, callback)
                     table.remove(sleepOperations, i)
                 end
             end
-        end)
+
+            if #sleepOperations == 0 then
+                events.TICK:remove("SleSleepHandler")
+                sleepOperations.tickHandler = nil
+            end
+        end, "SleSleepHandler")
     end
 end
 
@@ -111,15 +125,17 @@ events.TICK:register(function()
     for _, obj in pairs(randAnimInstances) do
         if obj.playing and now >= obj.nextTick then
             obj.animation:play()
+
             if obj.double and math.random() < obj.doubleChance then
-                local doubleObj = {animation = obj.animation, scheduled = true}
-                events.TICK:register(function(self)
-                    if doubleObj.scheduled and not doubleObj.animation:isPlaying() then
-                        doubleObj.animation:play()
-                        doubleObj.scheduled = false
-                        return true
+                doubleHandlerCount = doubleHandlerCount + 1
+                local handlerName = "SleDouble_" .. doubleHandlerCount
+                local anim = obj.animation
+                events.TICK:register(function()
+                    if not anim:isPlaying() then
+                        anim:play()
+                        events.TICK:remove(handlerName)
                     end
-                end)
+                end, handlerName)
             end
 
             obj.nextTick = now + randomDelay(obj.delay, obj.offset)
@@ -183,15 +199,17 @@ events.TICK:register(function()
     for _, obj in pairs(blinkInstances) do
         if obj.playing and (not sleeping) and now >= obj.nextTick then
             obj.animation:play()
+
             if obj.double and math.random() < obj.doubleChance then
-                local doubleObj = {animation = obj.animation, scheduled = true}
-                events.TICK:register(function(self)
-                    if doubleObj.scheduled and not doubleObj.animation:isPlaying() then
-                        doubleObj.animation:play()
-                        doubleObj.scheduled = false
-                        return true
+                doubleHandlerCount = doubleHandlerCount + 1
+                local handlerName = "SleDouble_" .. doubleHandlerCount
+                local anim = obj.animation
+                events.TICK:register(function()
+                    if not anim:isPlaying() then
+                        anim:play()
+                        events.TICK:remove(handlerName)
                     end
-                end)
+                end, handlerName)
             end
 
             obj.nextTick = now + randomDelay(obj.delay, obj.offset)
